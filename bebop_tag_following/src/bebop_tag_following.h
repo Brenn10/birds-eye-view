@@ -43,7 +43,8 @@ class bebopTagFollowing {
     bebopTagFollowing(ros::NodeHandle& nh);
 
     // Callback functions
-    void positionCallback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
+    void usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
+    void bebopCamTagCallback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg);
     void cameraCallback(const std_msgs::Bool::ConstPtr& isBottomCam);
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
@@ -66,7 +67,8 @@ class bebopTagFollowing {
     ros::ServiceClient flattrim;
 
     // Subscribers
-    ros::Subscriber tagPose;
+    ros::Subscriber usbTagPose;
+    ros::Subscriber bebopTagPose;
     ros::Subscriber orbSlamSub;
     ros::Subscriber clSub;
     ros::Subscriber dispatchSub;
