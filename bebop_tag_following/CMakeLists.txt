@@ -13,28 +13,36 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(BULLET bullet)
 include_directories(${BULLET_INCLUDE_DIRS})
 
-find_package(catkin REQUIRED COMPONENTS 
-  message_generation 
-  roscpp 
-  rospy 
-  std_msgs 
-  tf 
-  geometry_msgs 
-  nav_msgs 
-  visualization_msgs 
+find_package(catkin REQUIRED COMPONENTS
+  message_generation
+  roscpp
+  rospy
+  std_msgs
+  tf
+  geometry_msgs
+  nav_msgs
+  visualization_msgs
   message_filters
   sensor_msgs
 )
 
+add_message_files(
+  FILES
+  Dispatch.msg
+)
 
-catkin_package(CATKIN_DEPENDS 
-  message_runtime 
-  roscpp 
+generate_messages(
+  DEPENDENCIES
+)
+
+catkin_package(CATKIN_DEPENDS
+  message_runtime
+  roscpp
   rospy
-  std_msgs 
-  tf 
-  geometry_msgs 
-  nav_msgs 
+  std_msgs
+  tf
+  geometry_msgs
+  nav_msgs
   visualization_msgs
   sensor_msgs
 )
@@ -43,14 +51,12 @@ include_directories(${catkin_INCLUDE_DIRS})
 find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
-#The following lines are from a deprecated version which used the ardrone
-#find_package(ardrone_autonomy REQUIRED)
-#include_directories(${ardrone_autonomy_INCLUDE_DIRS})
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+find_package(ardrone_autonomy REQUIRED)
+include_directories(${ardrone_autonomy_INCLUDE_DIRS})
 
-add_executable(bebop_tag_following src/bebop_tag_following.cpp)
+
+add_executable(
+  bebop_tag_following src/bebop_tag_following.cpp src/PIDController.cpp
+)
 target_link_libraries(bebop_tag_following ${catkin_LIBRARIES})
 target_link_libraries(bebop_tag_following ${OpenCV_LIBS} ${BULLET_LIBRARIES})

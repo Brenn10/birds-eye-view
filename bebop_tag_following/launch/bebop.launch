@@ -1,10 +1,11 @@
 <launch>
     <include file="$(find bebop_tools)/launch/bebop_nodelet_iv.launch" />
     <include file="$(find bebop_tools)/launch/joy_teleop.launch" />
-     <!--  <include file="$(find cooperative_localization)/launch/gmapping.launch" />-->
     <include file="$(find usb_cam)/launch/usb_cam-log.launch" />
     <include file="$(find ar_track_alvar)/launch/flying_tag.launch" />
-    <include file="$(find cooperative_localization)/launch/cl.launch" />
-  	<!--<include file="$(find cooperative_localization)/launch/orbslam.launch" />-->
+    <!--<include ns="retrieval" file="$(find ar_track_alvar)/launch/ardrone_tag.launch" />-->
+    <!--<include file="$(find cooperative_localization)/launch/gmapping.launch" />-->
+    <!--<include file="$(find cooperative_localization)/launch/cl.launch" />-->
+    <!--<include file="$(find cooperative_localization)/launch/orbslam.launch" />-->
 
  </launch>
