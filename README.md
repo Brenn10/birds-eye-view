@@ -13,6 +13,8 @@ Daniel Madison
 
 Patrick Hamod
 
+Brennan Cain
+
 Jason M. O'Kane
 
 Ioannis Rekleitis
@@ -40,7 +42,7 @@ cd visiontracking/
 
 ## License
 ---
-Released under the MIT Liscense 
+Released under the MIT Liscense
 
 
 [afrl]: http://afrl.cse.sc.edu/afrl/home/
