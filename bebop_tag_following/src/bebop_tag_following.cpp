@@ -19,6 +19,7 @@ bebopTagFollowing::bebopTagFollowing(ros::NodeHandle& nh) {
   seenOnce = false;
   dispatch_state=following;
   //publishers & services
+  turtleCmd = nh.advertise<geometry_msgs::Twist>("/turtlebot/commands/velocity",1);
   drone_comms = nh.advertise<std_msgs::UInt8>("/drone_comms", 1);
   cmdVel = nh.advertise<geometry_msgs::Twist>("/bebop/cmd_vel", 1);
   takeOff = nh.advertise<std_msgs::Empty>("/bebop/takeoff", 1);
@@ -31,7 +32,7 @@ bebopTagFollowing::bebopTagFollowing(ros::NodeHandle& nh) {
   orbSlamSub = nh.subscribe("/birdseye/orbslam_path", 1, &bebopTagFollowing::orbSlamCallback, this);
   clSub = nh.subscribe("/birdseye/cl_ugv_path", 1, &bebopTagFollowing::clCallback, this);
   dispatchSub = nh.subscribe("/birdseye/dispatch",1,&bebopTagFollowing::dispatchDrone,this);
-  dispatchSub = nh.subscribe("/birdseye/retrieve",1,&bebopTagFollowing::retrieveDrone,this);
+  retrieveSub = nh.subscribe("/birdseye/retrieve",1,&bebopTagFollowing::retrieveDrone,this);
 
   //PID controllers
   z_pid= new PIDController(0.0,.4,-0.1,0.0);
@@ -44,7 +45,7 @@ bebopTagFollowing::bebopTagFollowing(ros::NodeHandle& nh) {
   initialize();
 }
 
-/******************************************************************************
+/*****************************************************************************
 * Function: initialize
 * Input: none
 *
@@ -54,9 +55,9 @@ void bebopTagFollowing::initialize() {
   startTime = ros::Time::now().toSec();
   state.x = state.y = state.z = 0;
 
-   std_msgs::Empty blank;
-   takeOff.publish(blank);
-   usleep(100);
+  std_msgs::Empty blank;
+  takeOff.publish(blank);
+  usleep(100);
 
   // Let Turtlebot know to start
   std_msgs::UInt8 turtleInfo;
@@ -121,44 +122,44 @@ double ang_dist(double a,double b)
 {
   double dist= b-a;
   while(dist<-180)
-    dist+=360;
+  dist+=360;
   while(dist>180)
-    dist-=360;
+  dist-=360;
   return dist;
 }
 
-//TODO: Test literally everything
+//TODO: Test retrieval, redo the branching to be more straight forward
 void bebopTagFollowing::bebopCamTagCallback(const ar_track_alvar_msgs::AlvarMarkers::ConstPtr& msg)
 {
-   if(dispatch_state==turning)//turn to find the tag
-   {
-     if(msg->markers.empty())
-     {
-       geometry_msgs::Twist cmdT;
+  if(dispatch_state==turning)//turn to find the tag
+  {
+    if(msg->markers.empty())
+    {
+      geometry_msgs::Twist cmdT;
 
-       cmdT.angular.z = .1;//turn until thing in range of view
-       cmdT.angular.x = cmdT.angular.y = cmdT.linear.x = cmdT.linear.y = cmdT.linear.z =  0;
+      cmdT.angular.z = .1;//turn until thing in range of view
+      cmdT.angular.x = cmdT.angular.y = cmdT.linear.x = cmdT.linear.y = cmdT.linear.z =  0;
 
 
-       cmdVel.publish(cmdT);
-     }
-     else
-     {
-       dispatch_state=returning;
-     }
-   }
-   if(dispatch_state==returning)
-   {
-     if(msg->markers.empty())
-     {
-       geometry_msgs::Twist cmdT;
+      cmdVel.publish(cmdT);
+    }
+    else
+    {
+      dispatch_state=returning;
+    }
+  }
+  if(dispatch_state==returning)
+  {
+    if(msg->markers.empty())
+    {
+      geometry_msgs::Twist cmdT;
 
-       cmdT.linear.x = -.1;//move until usb finds it
-       cmdT.angular.x = cmdT.angular.y = cmdT.angular.z = cmdT.linear.y = cmdT.linear.z =  0;
+      cmdT.linear.x = -.1;//move until usb finds it
+      cmdT.angular.x = cmdT.angular.y = cmdT.angular.z = cmdT.linear.y = cmdT.linear.z =  0;
 
-       cmdVel.publish(cmdT);
-     }
-   }
+      cmdVel.publish(cmdT);
+    }
+  }
 }
 
 /**************************************************************************************
@@ -176,8 +177,14 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
   std_msgs::String command;
   //if fully dispatched
   //TODO: implement explore and retireval
+
+  if(dispatch_state > 3 and !msg->markers.empty())//if trying to get back and tag found
+  {
+    dispatch_state = searching;
+  }
   if(dispatch_state<3 or dispatch_state==returning){
     if(!msg->markers.empty()) {//if not dispatched
+      ROS_WARN("Tag Spotted");
       seenOnce = true;
       timeDelta = currentTime-lastSeen;
       lastSeen = currentTime;
@@ -197,14 +204,15 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
       state.z = msg->markers[0].pose.pose.position.z;
 
       // Get message as quaternion, then get roll, pitch, yaw
-      tf::Quaternion q(msg->markers[0].pose.pose.orientation.x,
-                       msg->markers[0].pose.pose.orientation.y,
-                       msg->markers[0].pose.pose.orientation.z,
-                       msg->markers[0].pose.pose.orientation.w);
+      tf::Quaternion q(
+        msg->markers[0].pose.pose.orientation.x,
+        msg->markers[0].pose.pose.orientation.y,
+        msg->markers[0].pose.pose.orientation.z,
+        msg->markers[0].pose.pose.orientation.w
+      );
       tf::Matrix3x3 m(q);
       double t_r, t_p, t_y;
       m.getRPY(t_r, t_p, t_y);
-
       // Transform x, y, z, and yaw to drones distance from tag
       state.x = -state.x; // Originally, forward is pos and backward is neg.
       state.y = -state.y; // Originally, left is neg and right is pos.
@@ -214,9 +222,8 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
       if(state.yaw<-180.0) {
         state.yaw = 360.0+state.yaw;
       }
-
       ROS_INFO("Tag at: x=%1.2f  y=%1.2f  z=%1.2f  yaw=%1.2f",
-                state.x, state.y, state.z, state.yaw);
+      state.x, state.y, state.z, state.yaw);
       ROS_INFO("Tag vel: vx=%1.3f  vy=%1.3f", state.vx, state.vy);
 
       // Let Turtlebot know a tag is found
@@ -263,10 +270,10 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
         }
         case turning://in turning state
         {
+          ROS_WARN("Disp_angle=%1.2f, Facing=%1.2f",disp_angle,state.yaw);
           z_pid->update(state.z);
           yaw_pid->update(ang_dist(state.yaw,disp_angle));
           geometry_msgs::Twist cmdT;
-
           //pid controllers based on last and this state (accurate)
           cmdT.linear.x = state.x*0.25+.8*state.vx;
           cmdT.linear.y = state.y*0.25+.8*state.vy;
@@ -299,7 +306,7 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
         }
         case leaving://in leaving state(i'll fly away, fly away)
         {
-
+          ROS_WARN("Leaving");
           z_pid->update(state.z);
           yaw_pid->update(ang_dist(state.yaw,disp_angle));
           geometry_msgs::Twist cmdT;
@@ -316,7 +323,6 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
           cmdVel.publish(cmdT);
           break;
         }
-
       }
     }
 
@@ -329,48 +335,30 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
       }
       //if time last seen was N seconds+ ago, we failwed recover
       // TODO: implement auto retrieval if lost for long time (and hope we dont hit a wall)
-      else if(currentTime-lastSeen>5) {
-        if(!printedWarn) {
+      else if(currentTime-lastSeen>10) {
+        if(!printedWarn and seenOnce) {
           tagDetected = false;
           printedWarn = true;
           turtleInfo.data = LOST_TAG;
           drone_comms.publish(turtleInfo);
           usleep(100);
-          ROS_ERROR("Failed recover, please teleop to recover.");
+          ROS_ERROR("Failed recover, attempting retrieval.");
           hover();
-        }
-        if(seenOnce) {
-
-          hover();
+          dispatch_state=searching;
         }
       }
       //if recently lost, try to recover using simple mechanism
-      else {
+      else if(currentTime-lastSeen>1) {
         ROS_WARN("Lost tag, attempting recovery.");
 
         geometry_msgs::Twist cmdT;
-
-        //move in direction of error, clip vel to +/-.1m/s
-        cmdT.linear.x = min(.1,max(-.1,state.x*.1));
-        cmdT.linear.y = min(.1,max(-.1,state.y*.1));
-
-
-        // rotate velocities the same as yaw (to have them point to the robot)
-        double yaw_rad = state.yaw*M_PI/180;
-        Vector2d v(cmdT.linear.x,cmdT.linear.y);
-        Matrix2d T; //standard rotation matrix a
-        T << cos(yaw_rad),sin(yaw_rad),
-             -sin(yaw_rad), cos(yaw_rad);
-        v = T*v;
-
-        //decompose vector
-        cmdT.linear.x = v[0];
-        cmdT.linear.y = v[1];
-
-        cmdT.angular.x = cmdT.angular.y = cmdT.angular.z = cmdT.linear.z = 0;
-
-
+        cmdT.linear.z=.1;
+        cmdT.angular.x = cmdT.angular.y = cmdT.angular.z = cmdT.linear.x = cmdT.linear.y = 0;
         cmdVel.publish(cmdT);
+        geometry_msgs::Twist turtleCmdT;
+        turtleCmdT.angular.z=.3;
+        turtleCmdT.angular.x = turtleCmdT.angular.y = turtleCmdT.linear.z = turtleCmdT.linear.x = turtleCmdT.linear.y = 0;
+        turtleCmd.publish(turtleCmdT);
       }
     }
   }
@@ -383,24 +371,21 @@ TODO: implement dispatch
 */
 void bebopTagFollowing::dispatchDrone( const bebop_tag_following::Dispatch::ConstPtr& msg)
 {
-  // Let Turtlebot know a tag is found
-  if(dispatch_state==following)
-  {
-    ROS_WARN("Telling drone to get lost");
-    std_msgs::UInt8 turtleInfo;
-    turtleInfo.data = DRONE_DISPATCHED;
-    disp_angle=msg->yaw;
-    disp_vel=msg->lin_vel;
 
-    dispatch_state=turning;
+  ROS_WARN("Telling drone to get lost");
+  std_msgs::UInt8 turtleInfo;
+  turtleInfo.data = DRONE_DISPATCHED;
+  disp_angle=msg->yaw;
+  disp_vel=msg->lin_vel;
 
-    drone_comms.publish(turtleInfo);
-  }
+  dispatch_state=turning;
+
+  drone_comms.publish(turtleInfo);
 }
 
-void bebopTagFollowing::retrieveDrone( const bebop_tag_following::Dispatch::ConstPtr& msg)
+void bebopTagFollowing::retrieveDrone( const std_msgs::Empty::ConstPtr& msg)
 {
-
+  dispatch_state=searching;
 }
 
 /******************************************************************************
@@ -413,11 +398,11 @@ main(int argc, char **argv) {
   ros::init(argc, argv, "pilot");
   ros::NodeHandle n;
   bebopTagFollowing pilot(n);
-//  ros::Rate rate(15);
- // while(ros::ok()) {
- //   ros::spinOnce();
- //   rate.sleep();
- // }
+  //  ros::Rate rate(15);
+  // while(ros::ok()) {
+  //   ros::spinOnce();
+  //   rate.sleep();
+  // }
   ros::spin();
 
   pilot.shutDown();

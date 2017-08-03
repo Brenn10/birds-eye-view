@@ -50,7 +50,7 @@ class bebopTagFollowing {
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
     void dispatchDrone( const bebop_tag_following::Dispatch::ConstPtr& msg);
-    void retrieveDrone( const bebop_tag_following::Dispatch::ConstPtr& msg);
+    void retrieveDrone( const std_msgs::Empty::ConstPtr& msg);
 
     // Misc. functions
     void shutDown();
@@ -60,6 +60,7 @@ class bebopTagFollowing {
   private:
     static const double HEIGHT_OVER_TAG = 1;
     // Publishers
+    ros::Publisher turtleCmd;
     ros::Publisher drone_comms;
     ros::Publisher cmdVel;
     ros::Publisher land;
