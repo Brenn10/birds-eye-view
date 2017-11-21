@@ -1,0 +1,3 @@
+<launch>
+  <node pkg="ORB_SLAM2" type="Mono" name="Mono" output="screen" args="../config/ORBvoc.txt ../config/bebop1.yaml" />
+</launch>

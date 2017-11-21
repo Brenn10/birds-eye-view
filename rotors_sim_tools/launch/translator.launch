@@ -1,0 +1,3 @@
+<launch>
+	<node name="translator" pkg="rotors_sim_tools" type="twist_to_rpy.py" required="true" />
+</launch>

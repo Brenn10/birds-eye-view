@@ -1,0 +1,23 @@
+from mav_msgs.msg import RollPitchYawrateThrust
+from geometry_msgs.msg import Twist
+import rospy
+
+class Translator:
+	def translate(self,twst):
+		rpy=RollPitchYawrateThrust()
+		rpy.thrust.x=twst.linear.x*100
+		rpy.thrust.y=twst.linear.y*100
+		rpy.thrust.z=5+twst.linear.z
+		rpy.roll=twst.angular.x*10
+		rpy.pitch=twst.angular.y*10
+		rpy.yaw_rate=twst.angular.z
+		self.pub.publish(rpy)
+	def __init__(self):
+		sub_to = rospy.get_param("~in","/bebop/cmd_vel")
+		pub_to = rospy.get_param("~out","/bebop2/command/roll_pitch_yawrate_thrust")
+
+		rospy.init_node("bebop_joy_to_sim_cmd")
+		self.pub = rospy.Publisher(pub_to,RollPitchYawrateThrust,queue_size=1)
+		rospy.Subscriber(sub_to,Twist,self.translate)
+		rospy.spin()
+t=Translator()
