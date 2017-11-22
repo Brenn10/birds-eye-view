@@ -8,7 +8,7 @@
   
   <!-- Gazebo model spawner -->
   <node name="spawn_turtlebot_model" pkg="gazebo_ros" type="spawn_model"
-        args="$(optenv ROBOT_INITIAL_POSE) -urdf -param robot_description -model mobile_base"/>
+        args="$(optenv ROBOT_INITIAL_POSE) -unpause -urdf -x 1 -param robot_description -model mobile_base"/>
   
   <!-- Velocity muxer -->
   <node pkg="nodelet" type="nodelet" name="mobile_base_nodelet_manager" args="manager"/>
@@ -18,6 +18,4 @@
     <remap from="cmd_vel_mux/output" to="mobile_base/commands/velocity"/>
   </node>
 
-  <!-- Bumper/cliff to pointcloud (not working, as it needs sensors/core messages) -->
-  <include file="$(find turtlebot_bringup)/launch/includes/kobuki/bumper2pc.launch.xml"/>
 </launch>

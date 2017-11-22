@@ -19,7 +19,7 @@
 #include "ar_track_alvar_msgs/AlvarMarkers.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose.h"
-//#include <bebop_tag_following/Dispatch.h>
+#include "Dispatch.h"
 
 #include "State.h"
 
@@ -49,7 +49,7 @@ class bebopTagFollowing {
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
-    void dispatchDrone( const bebop_tag_following::Dispatch::ConstPtr& msg);
+    void dispatchDrone( const geometry_msgs::Point);
     void retrieveDrone( const std_msgs::Empty::ConstPtr& msg);
 
     // Misc. functions

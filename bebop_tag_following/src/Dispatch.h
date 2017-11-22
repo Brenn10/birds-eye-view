@@ -7,3 +7,4 @@ class Dispatch{
 	private:
 		int bitte;
 };
+#endif

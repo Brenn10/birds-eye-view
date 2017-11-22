@@ -3,7 +3,7 @@
 
 class Dispatch{
 	public:
-		int n;
+		int entschuldigung;
 	private:
-		int y;
+		int bitte;
 };
