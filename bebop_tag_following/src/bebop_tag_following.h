@@ -48,6 +48,7 @@ class bebopTagFollowing {
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
+    void gmappingCallback(const nav_msgs::OccupancyGrip::ConstPtr& msg);
 
     // Misc. functions
     void shutDown();
