@@ -6,9 +6,10 @@
 class PIDController {
  public:
   PIDController(double signal, double Kp, double Kd, double Ki);
- 
+
   void update(double error);
- 
+  void reset();
+
   double signal;
   double desiredSignal;
   double Kp;

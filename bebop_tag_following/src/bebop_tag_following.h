@@ -48,8 +48,6 @@ class bebopTagFollowing {
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
-    void dispatchDrone( const geometry_msgs::Point::ConstPtr& goal); //dispatch to POI
-    void retrieveDrone( const std_msgs::Empty::ConstPtr& msg); //abandon search for POI
 
     // Misc. functions
     void shutDown();
@@ -67,22 +65,22 @@ class bebopTagFollowing {
     ros::ServiceClient flattrim;
 
     // Subscribers
-    ros::Subscriber usbTagPose;
-    ros::Subscriber bebopTagPose;
+    ros::Subscriber usbTagPose;// gives the pose of the tag on the quad in relation to the turtle
+    ros::Subscriber bebopTagPose;//gives the pose of the object in relation to the quad
     ros::Subscriber orbSlamSub;
     ros::Subscriber clSub;
-    ros::Subscriber dispatchSub;
-    ros::Subscriber retrieveSub;
 
 
     PIDController *z_pid,*yaw_pid,*disp_pid;
     bool printedWarn;
     bool tagDetected;
-    bool seenOnce;
-    enum Dispatched {following,turning,leaving,dispatched,searching,returning};
+    bool droneSeenOnce;
+    bool objectSeenOnce;
+    enum Dispatched {following,dispatched,returning};
     Dispatched dispatch_state;
     double disp_angle,disp_vel;
-    double lastSeen;
+    double droneLastSeen;
+    double objectLastSeen;
     double startTime;
     double currentTime;
     double timeDelta;
