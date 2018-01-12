@@ -49,8 +49,8 @@ class bebopTagFollowing {
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
-    void dispatchDrone( const geometry_msgs::Point);
-    void retrieveDrone( const std_msgs::Empty::ConstPtr& msg);
+    void dispatchDrone( const geometry_msgs::Point::ConstPtr& goal); //dispatch to POI
+    void retrieveDrone( const std_msgs::Empty::ConstPtr& msg); //abandon search for POI
 
     // Misc. functions
     void shutDown();

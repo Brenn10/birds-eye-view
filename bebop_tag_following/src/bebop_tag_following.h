@@ -19,7 +19,6 @@
 #include "ar_track_alvar_msgs/AlvarMarkers.h"
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Pose.h"
-#include "Dispatch.h"
 
 #include "State.h"
 

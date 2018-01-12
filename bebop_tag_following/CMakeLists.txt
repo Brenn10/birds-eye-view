@@ -14,7 +14,6 @@ pkg_check_modules(BULLET bullet)
 include_directories(${BULLET_INCLUDE_DIRS})
 
 find_package(catkin REQUIRED COMPONENTS
-  message_generation
   roscpp
   rospy
   std_msgs
@@ -26,17 +25,15 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
-add_message_files(
-  FILES
-  Dispatch.msg
-)
+#add_message_files(
+#  FILES
+#)
 
 generate_messages(
   DEPENDENCIES
 )
 
 catkin_package(CATKIN_DEPENDS
-  message_runtime
   roscpp
   rospy
   std_msgs

@@ -371,7 +371,16 @@ TODO: implement dispatch
 */
 void bebopTagFollowing::dispatchDrone( const geometry_msgs::Point::ConstPtr& goal)
 {
-return;
+
+  ROS_WARN("Telling drone to get lost");
+  std_msgs::UInt8 turtleInfo;
+  turtleInfo.data = DRONE_DISPATCHED;
+  disp_angle=msg->yaw;
+  disp_vel=msg->lin_vel;
+
+  dispatch_state=turning;
+
+  drone_comms.publish(turtleInfo);
 }
 
 void bebopTagFollowing::retrieveDrone( const std_msgs::Empty::ConstPtr& msg)
