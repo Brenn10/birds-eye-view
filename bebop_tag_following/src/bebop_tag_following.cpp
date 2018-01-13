@@ -4,7 +4,8 @@
 * Bebop. It also communicates with a TurtleBot about tag detection status.
 *
 * Author: Shannon Hood
-* Last modified: 13 Feb 2017
+* Maintainer: Brennan Cain
+* Last modified: 13 Jan 2018
 */
 
 #include "bebop_tag_following.h"
@@ -12,6 +13,9 @@
 #include <iostream>
 #include <Eigen/Dense>
 #include <math.h>
+
+#include "gmapping/dynamic_map.h"
+#include "nav_msgs/GetMap.h"
 using namespace std;
 using namespace Eigen;
 
@@ -26,6 +30,7 @@ bebopTagFollowing::bebopTagFollowing(ros::NodeHandle& nh) {
   cmdVel = nh.advertise<geometry_msgs::Twist>("/bebop/cmd_vel", 1);
   takeOff = nh.advertise<std_msgs::Empty>("/bebop/takeoff", 1);
   land = nh.advertise<std_msgs::Empty>("/bebop/land", 1);
+  dispatchPubber = nh.advertise<std_msgs::U?Int8>("/birdseye/dispatch_state",1);
   flattrim = nh.serviceClient<std_srvs::Empty>("/bebop/flattrim");
 
   //subscribers
@@ -33,7 +38,7 @@ bebopTagFollowing::bebopTagFollowing(ros::NodeHandle& nh) {
   bebopTagPose = nh.subscribe("/bebop_cam_tracker/ar_pose_marker", 5, &bebopTagFollowing::bebopCamTagCallback, this);
   orbSlamSub = nh.subscribe("/birdseye/orbslam_path", 1, &bebopTagFollowing::orbSlamCallback, this);
   clSub = nh.subscribe("/birdseye/cl_ugv_path", 1, &bebopTagFollowing::clCallback, this);
-  gmappingSub = nh.subscribe("/gmapping/map",1,&bebopTagFollowing::gmappingCallback,this);
+  navPathCallback = nh.subscribe("/birdseye/quad_return_path",1,&bebopTagFollowing::navPathCallback,this);
 
   //PID controllers
   z_pid= new PIDController(0.0,.4,-0.1,0.0);
@@ -234,7 +239,7 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
           usleep(100);
           ROS_ERROR("Failed recover, attempting retrieval.");
           hover();
-          dispatch_state=returning;
+          setDispatchState(returning);
         }
       }
       //if recently lost, try to recover using simple mechanism
@@ -254,7 +259,7 @@ void bebopTagFollowing::usbCamTagCallback(const ar_track_alvar_msgs::AlvarMarker
   }
   else if(dispatch_state==returning){
     if(!msg->makers.empty())){ //successful return
-      dispatch_state=following;
+      setDispatchState(following);
     }
   }
 }
@@ -276,7 +281,7 @@ void bebopTagFollowing::bebopCamTagCallback(const ar_track_alvar_msgs::AlvarMark
 
   if(!msg->markers.empty() and dispatch_state==following) //if following and object spotted, investigate
   {
-    dispatch_state=dispatched;
+    setDispatchState(dispatched);
     yaw_pid->reset();
   }
   if(dispatch_state==dispatched)
@@ -296,7 +301,7 @@ void bebopTagFollowing::bebopCamTagCallback(const ar_track_alvar_msgs::AlvarMark
       if(pow(objState.x,2)+pow(objState.y,2)+pow(objState.z,2)<1)
       {
         ROS_WARN("Quad has arrived at the object, returning");
-        dispatch_state=returning;
+        setDispatchState(returning);
         yaw_pid->reset();
         return;
       }
@@ -325,19 +330,25 @@ void bebopTagFollowing::bebopCamTagCallback(const ar_track_alvar_msgs::AlvarMark
       }
       else
       {
-        dispatch_state=returning;
+        setDispatchState(returning);
         yaw_pid->reset();
       }
     }
   }
 }
 
-void bebopTagFollowing::gmappingCallback(const nav_msgs::OccupancyGrip::ConstPtr& msg)
+void bebopTagFollowing::navPathCallback(const geometry_msgs::PoseArray::ConstPtr& msg)
 {
-  //Lets grab the map from the service so we dont have to worry about taking too long
-
+  //TODO: update instance var containing waypoints
 }
 
+void bebopTagFollowing::setDispatchState(Dispatch new_disp_state)
+{
+  std_msgs::UInt8 msg;
+  msg.data=new_disp_state;
+  dispatchPubber.publish(msg);
+  dispatch_state=new_disp_state
+}
 /******************************************************************************
 * Function: main
 * Input: none required

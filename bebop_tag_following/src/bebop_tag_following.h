@@ -1,10 +1,9 @@
 /************************************************************************
 * Controller header file.
-* The Controller class controls the movement of the AR.Drone through tum_ardrone
-* Publishes to the rostopic /tum_ardrone/com
+* The Controller class controls the movement of the Bebop drone
 *
-* Authors: Shannon Hood, Patrick Hamod, Kelly Benson
-* Last Modified: 09/09/16
+* Authors: Shannon Hood, Patrick Hamod, Kelly Benson, Brennan Cain
+* Last Modified: 13 Jan 2018
 */
 
 #include "ros/ros.h"
@@ -48,7 +47,8 @@ class bebopTagFollowing {
     void turtlebotCallback(const nav_msgs::Odometry::ConstPtr& msg);
     void orbSlamCallback(const nav_msgs::Path::ConstPtr& msg);
     void clCallback(const nav_msgs::Path::ConstPtr& msg);
-    void gmappingCallback(const nav_msgs::OccupancyGrip::ConstPtr& msg);
+    void navPathCallback(const geometry_msgs::PoseArray::ConstPtr& msg);
+    void setDispatchState(Dispatched new_disp_state);
 
     // Misc. functions
     void shutDown();
@@ -63,6 +63,8 @@ class bebopTagFollowing {
     ros::Publisher cmdVel;
     ros::Publisher land;
     ros::Publisher takeOff;
+    ros::Publisher dispatchPubber;
+
     ros::ServiceClient flattrim;
 
     // Subscribers
